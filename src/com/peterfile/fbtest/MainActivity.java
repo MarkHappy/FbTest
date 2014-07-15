@@ -10,23 +10,25 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 
 public class MainActivity extends FragmentActivity {
 	
+	private static final String TAG = MainActivity.class.getSimpleName();
 	private static final int SPLASH = 0;
 	private static final int SELECTION = 1;
-	private static final int FRAGMENT_COUNT = SELECTION + 1;
+	private static final int SETTINGS = 2;
+	private static final int FRAGMENT_COUNT = SETTINGS + 1;
 	private boolean isResumed = false;
 	private UiLifecycleHelper uiHelper;
-	private Fragment[] fragments = new Fragment[FRAGMENT_COUNT];	
+	private Fragment[] fragments = new Fragment[FRAGMENT_COUNT];
+	private MenuItem settings;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
+		Log.w(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
@@ -36,15 +38,18 @@ public class MainActivity extends FragmentActivity {
 		FragmentManager fm = getSupportFragmentManager();
 		fragments[SPLASH] = fm.findFragmentById(R.id.splashFragment);
 		fragments[SELECTION] = fm.findFragmentById(R.id.selectionFragment);
+		fragments[SETTINGS] = fm.findFragmentById(R.id.userSettingsFragment);
 		
 		FragmentTransaction transaction = fm.beginTransaction();
 		for (int i = 0; i < fragments.length; i++) {
+			Log.w(TAG, "Fragemnt: " + i);
 			transaction.hide(fragments[i]);
 		}
 		transaction.commit();
 	}
 	
 	private void showFragment(int fragmentIndex, boolean addToBackStack) {
+		Log.w(TAG, "showFragment: " + fragmentIndex);
 		FragmentManager fm = getSupportFragmentManager();
 		FragmentTransaction transaction = fm.beginTransaction();
 		for (int i = 0; i < FRAGMENT_COUNT; i++) {
@@ -57,6 +62,7 @@ public class MainActivity extends FragmentActivity {
 				transaction.addToBackStack(null);
 			}
 		}
+		transaction.commit();
 	}
 	
 	private void onSessionStateChange (Session session, SessionState state, Exception exception) {
@@ -90,6 +96,7 @@ public class MainActivity extends FragmentActivity {
 	
 	@Override
 	protected void onResumeFragments() {
+		Log.w(TAG, "onResumeFragments");
 		super.onResumeFragments();
 		Session session = Session.getActiveSession();
 		
@@ -112,6 +119,7 @@ public class MainActivity extends FragmentActivity {
 	
 	@Override
 	protected void onResume() {
+		Log.w(TAG, "onResume");
 		uiHelper.onResume();
 		isResumed = true;
 		super.onResume();
@@ -119,6 +127,7 @@ public class MainActivity extends FragmentActivity {
 	
 	@Override
 	protected void onPause() {
+		Log.w(TAG, "onPause");
 		uiHelper.onPause();
 		isResumed = false;
 		super.onPause();
@@ -137,40 +146,26 @@ public class MainActivity extends FragmentActivity {
 	}
 	
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		if (fragments[SELECTION].isVisible()) {
+			if (menu.size() == 0) {
+				settings = menu.add(R.string.settings);
+			}
+			return true;
+		} else {
+			menu.clear();
+			settings = null;
+		}
+		return false;
 	}
-
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
+		if (item.equals(settings)) {
+			showFragment(SETTINGS, true);
 			return true;
 		}
-		return super.onOptionsItemSelected(item);
-	}
-
-	/**
-	 * A placeholder fragment containing a simple view.
-	 */
-	public static class PlaceholderFragment extends Fragment {
-
-		public PlaceholderFragment() {
-		}
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container,
-				Bundle savedInstanceState) {
-			View rootView = inflater.inflate(R.layout.fragment_main, container,
-					false);
-			return rootView;
-		}
+		return false;
 	}
 
 }
